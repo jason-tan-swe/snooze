@@ -1,12 +1,16 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useToast } from "@/hooks/use-toast"
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import WebhookItem from './WebhookItem'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { ChevronDown } from 'lucide-react'
+import { ScrollArea } from '@/components/ui/scroll-area'
 
 const EVENT_TYPES = {
   create: "create",
@@ -36,7 +40,19 @@ export default function WebhookManager() {
   const [dataType, setDataType] = useState('')
   const [webhooks, setWebhooks] = useState([])
   const [isLoading, setIsLoading] = useState(true)
+  const [cardHeight, setCardHeight] = useState(200)
+  const cardBodyRef = useRef(null)
   const { toast } = useToast()
+
+  useEffect(() => {
+    if (!cardBodyRef.current) return;
+    const resizeObserver = new ResizeObserver(() => {
+      // Do what you want to do when the size of the element changes
+      setCardHeight(cardBodyRef.current.offsetHeight)
+    });
+    resizeObserver.observe(cardBodyRef.current);
+    return () => resizeObserver.disconnect(); // clean up 
+  }, [])
 
   const fetchWebhooks = async () => {
     try {
@@ -45,7 +61,6 @@ export default function WebhookManager() {
       const data = await response.json()
       setWebhooks(data || [])
     } catch (error) {
-      console.error('Error fetching webhooks:', error)
       toast({
         title: 'Error',
         description: 'Failed to fetch webhooks',
@@ -70,7 +85,8 @@ export default function WebhookManager() {
         }),
       })
 
-      if (!response.ok) throw new Error('Failed to create webhook')
+      const body = await response.json()
+      if (!response.ok) throw new Error(body.error)
       
       toast({
         title: 'Success',
@@ -82,11 +98,12 @@ export default function WebhookManager() {
       console.error('Error creating webhook:', error)
       toast({
         title: 'Error',
-        description: 'Failed to create webhook',
+        description: error?.message ?? 'Failed to create webhook',
         variant: 'destructive',
       })
     } finally {
       setIsLoading(false)
+      setIsOpen(false)
     }
   }
 
@@ -119,8 +136,8 @@ export default function WebhookManager() {
   }, [])
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 py-4">
-      <Card className="w-full max-w-4xl mx-auto bg-white shadow-lg">
+    <div className="w-full h-full">
+      <Card ref={cardBodyRef} className="overflow-auto w-full h-full bg-white shadow-lg">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold tracking-tight">Webhook Management</CardTitle>
           <CardDescription className="text-sm text-gray-500">
@@ -136,62 +153,22 @@ export default function WebhookManager() {
             >
               {isLoading ? 'Creating...' : 'Create Webhook'}
             </Button>
-            <Dialog open={isOpen} onOpenChange={setIsOpen}>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle className="mb-4">Create a Webhook</DialogTitle>
-                  <form
-                    onSubmit={async (e) => {
-                      e.preventDefault()
-                      await createWebhook()
-                    }}
-                    className="flex flex-col gap-4"
-                  >
-                    <Select onValueChange={(value) => setEventType(value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a Event Type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                          {Object.values(EVENT_TYPES).map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                    <Select onValueChange={(value) => setDataType(value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a Data Type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                          {Object.values(DATA_TYPES).map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                    
-						      {/** some inputs */}
-						      <Button className='self-end' type="submit">{isLoading ? 'Creating...' : 'Create Webhook'}</Button>
-                </form>
-                </DialogHeader>
-              </DialogContent>
-            </Dialog>
             <p className="text-sm text-gray-500 hidden sm:block">
               {webhooks.length} webhook{webhooks.length !== 1 ? 's' : ''} configured
             </p>
           </div>
-
-          <div className="grid gap-4">
+          <div style={{ height: Math.floor(cardHeight / 2) }} className={`overflow-auto`}>
+          <div className="flex flex-col gap-4">
             {webhooks.map((webhook) => (
               <div
                 key={webhook.id}
                 className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 rounded-lg border bg-gray-50 hover:bg-gray-100 transition-colors"
               >
-                <div className="space-y-1 mb-4 sm:mb-0">
-                  <p className="font-medium break-all">ID: {webhook.id}</p>
-                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
-                    <p className="text-sm text-gray-500">
-                      Event: {webhook.event_type}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      Data: {webhook.data_type}
-                    </p>
-                  </div>
-                </div>
+                <WebhookItem
+                  id={webhook.id}
+                  dataType={webhook.data_type}
+                  eventType={webhook.event_type}
+                />
                 <Button
                   variant="destructive"
                   onClick={() => deleteWebhook(webhook.id)}
@@ -213,8 +190,41 @@ export default function WebhookManager() {
               </div>
             )}
           </div>
+          </div>
         </CardContent>
       </Card>
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="mb-4">Create a Webhook</DialogTitle>
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault()
+                await createWebhook()
+              }}
+              className="flex flex-col gap-4"
+            >
+              <Select onValueChange={(value) => setEventType(value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a Event Type" />
+                </SelectTrigger>
+                <SelectContent>
+                    {Object.values(EVENT_TYPES).map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select onValueChange={(value) => setDataType(value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a Data Type" />
+                </SelectTrigger>
+                <SelectContent>
+                    {Object.values(DATA_TYPES).map(type => <SelectItem key={type} value={type}>{type}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            <Button className='self-end' type="submit">{isLoading ? 'Creating...' : 'Create Webhook'}</Button>
+          </form>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -4,6 +4,12 @@ import { useSession, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 import WebhookManager from '@/app/components/WebhookManager'
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
+import { Button } from '@/components/ui/button'
+import { LogOutIcon } from 'lucide-react'
+import EventViewer from '../components/EventViewer'
+import DataViewer from '../components/DataViewer'
+import PersonalDataManager from '../components/PersonalDataManager'
 
 export default function DashboardPage() {
   const session = useSession()
@@ -24,26 +30,50 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="h-screen w-screen mx-auto p-4 space-y-8 overflow-auto">
-      <WebhookManager />
-      <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-2xl font-bold">Dashboard</h1>
-          <button
-            onClick={() => signOut({ callbackUrl: '/home' })}
-            className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
-          >
-            Sign Out
-          </button>
-        </div>
-        
-        <div className="bg-white shadow rounded-lg p-6">
-          <h2 className="text-xl font-semibold mb-4">Your Oura Ring Data</h2>
-          <pre className="bg-gray-100 p-4 rounded overflow-auto">
-            {JSON.stringify(session.data, null, 2)}
-          </pre>
-        </div>
+    <div className="max-h-body h-full w-full">
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <Button
+          onClick={() => signOut({ callbackUrl: '/home' })}
+          variant="ghost"
+        >
+          <LogOutIcon />
+        </Button>
       </div>
+
+      <ResizablePanelGroup direction="horizontal">
+        <ResizablePanel>
+          <ResizablePanelGroup direction="vertical">
+            <ResizablePanel
+              minSize={20}
+            >
+              <PersonalDataManager data={session.data} />
+            </ResizablePanel>
+            <ResizableHandle />
+            <ResizablePanel
+              minSize={40}
+            >
+              <WebhookManager />
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        </ResizablePanel>
+        <ResizableHandle />
+        <ResizablePanel>
+          <ResizablePanelGroup direction="vertical">
+            <ResizablePanel
+              minSize={20}
+            >
+              <DataViewer />
+            </ResizablePanel>
+            <ResizableHandle />
+            <ResizablePanel
+              minSize={40}
+            >
+              <EventViewer />
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        </ResizablePanel>
+      </ResizablePanelGroup>
     </div>
   )
 }

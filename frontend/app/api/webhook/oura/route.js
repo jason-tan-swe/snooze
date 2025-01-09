@@ -2,34 +2,9 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import crypto from 'crypto'
 import { authConfig } from '@/app/api/auth/auth.config.js'
+import { parseErrorResponse } from '@/lib/utils'
 
-// Helper function to safely parse response
-async function parseErrorResponse(response) {
-  const contentType = response.headers.get('content-type') || ''
-  try {
-    if (contentType.includes('application/json')) {
-      const jsonError = await response.json()
-      return {
-        status: response.status,
-        error: jsonError.detail || JSON.stringify(jsonError),
-        type: 'json'
-      }
-    } else {
-      const textError = await response.text()
-      return {
-        status: response.status,
-        error: textError,
-        type: 'text'
-      }
-    }
-  } catch (e) {
-    return {
-      status: response.status,
-      error: `Failed to parse error response: ${e.message}`,
-      type: 'unknown'
-    }
-  }
-}
+
 
 // List webhook subscriptions
 export async function GET(request) {
@@ -69,7 +44,6 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const params = await request.json()
-    console.log(params)
     const session = await getServerSession(authConfig)
     if (!session?.accessToken) {
       return new NextResponse('Unauthorized', { status: 401 })

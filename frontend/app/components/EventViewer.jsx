@@ -3,6 +3,8 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useEffect, useState } from "react"
 import { columns } from "./EventsTable/columns"
 import { DataTable } from "./EventsTable/data-table"
+import { Button } from "@/components/ui/button"
+import { RefreshCcw } from "lucide-react"
 
 const EventViewer = () => {
     const [events, setEvents] = useState([])
@@ -39,7 +41,16 @@ const EventViewer = () => {
                 </CardDescription>
             </CardHeader>
             <CardContent>
-                <p>Found {events.length} events</p>
+                <div className="w-full flex items-center">
+                    <p>Found {events.length} events</p>
+                    <Button
+                        variant="ghost"
+                        onClick={fetchEvents}
+                        disabled={isLoading}
+                    >
+                        <RefreshCcw />
+                    </Button>
+                </div>
                 {isLoading ? (
                     <Skeleton className="w-[100px] h-[20px] rounded-full" /> 
                 )

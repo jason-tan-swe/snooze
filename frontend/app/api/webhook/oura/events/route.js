@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { connectToDatabase } from '@/lib/mongodb'
 import Data from '@/app/models/Data'
+import { tasks } from '@trigger.dev/sdk/v3'
 
 // Health-Check
 export async function PATCH(request) {
@@ -14,7 +15,6 @@ export async function PATCH(request) {
 
 export async function POST(request) {
   try {
-    await connectToDatabase()
     const body = await request.json()
     console.log('Webhook event received:', body)
     
@@ -89,10 +89,7 @@ function verifySignature(signature, body, secret) {
 }
 
 async function handleEvent(data) {
-  console.log("Event Received of type", data.data_type)
-  const newEvent = new Data(data)
-  await newEvent.save()
-  console.log("Saved!")
+  tasks.trigger('save-event', data)
 }
 
 async function handleSleepEvent(data) {

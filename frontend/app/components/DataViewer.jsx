@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button"
 import { useState } from "react"
 import { Input } from "@/components/ui/input"
 import { parseErrorResponse } from "@/lib/utils"
+import { Skeleton } from "@/components/ui/skeleton"
 
 const DataViewer = () => {
     const [objectId, setObjectId] = useState("")
@@ -42,7 +43,7 @@ const DataViewer = () => {
                 <form onSubmit={handleSubmit}>
                     <Button type="submit">Get Info</Button>
                 </form>
-                {data && !isLoading && (
+                {isLoading ? <Skeleton className="w-32 h-5" />  : data && (
                     <>
                         <pre>
                             {JSON.stringify(data, null, 2)}

@@ -9,8 +9,7 @@ export const saveEventTask = task({
   },
   maxDuration: 300, // Stop executing after 300 secs (5 mins) of compute
   run: async (payload) => {
-    logger.log("Hello, world!");
-    logger.info("Received event_type")
+    console.log("Payload received: ", payload)
 
     await connectToDatabase()
     const newEvent = new Data(payload)

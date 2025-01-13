@@ -27,15 +27,7 @@ export async function POST(request) {
     // }
 
     // Handle different event types
-    switch (body.data_type) {
-      case 'sleep':
-      case 'session':
-      case 'tag':
-      case 'workout':
-      default:
-        handleEvent(body)
-        console.log('Unhandled event type:', body)
-    }
+    handleEvent(body)
 
     return new NextResponse('OK', { status: 200 })
   } catch (error) {
@@ -89,7 +81,13 @@ function verifySignature(signature, body, secret) {
 }
 
 async function handleEvent(data) {
-  tasks.trigger('save-event', data)
+  const handle = await tasks.trigger('save-event', data, {
+    maxAttempts: 3,
+    queue: {
+      concurrencyLimit: 1,
+    },
+  })
+  console.log('Triggered Task', handle)
 }
 
 async function handleSleepEvent(data) {
